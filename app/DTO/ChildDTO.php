@@ -6,7 +6,7 @@ readonly class ChildDTO
 {
     public function __construct(
         private ?string $name = null,
-        private ?int    $age = null,
+        private ?int $age = null,
         private ?string $gender = null
     ) {}
 
@@ -32,5 +32,14 @@ readonly class ChildDTO
     public function getGender(): ?string
     {
         return $this->gender;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'name' => $this->getName(),
+            'age' => $this->getAge(),
+            'gender' => $this->getGender()
+        ];
     }
 }

@@ -5,7 +5,7 @@ namespace App\DTO;
 use App\Http\Requests\Api\V1\StoryCreateRequest;
 use App\Enums\StoryTypeEnum;
 
-class CreateStoryTextExerciseDTO
+readonly class CreateStoryTextExerciseDTO
 {
     public function __construct(
         private ChildDTO $child,
