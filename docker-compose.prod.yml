@@ -1,0 +1,25 @@
+# ==========================================================
+#  Продакшен
+#  Запуск на сервере:
+#    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ==========================================================
+
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/certbot/www:/var/www/certbot
+      - ./docker/certbot/conf:/etc/letsencrypt
+
+  certbot:
+    image: certbot/certbot
+    container_name: story_certbot
+    volumes:
+      - ./docker/certbot/www:/var/www/certbot
+      - ./docker/certbot/conf:/etc/letsencrypt
+#    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --deploy-hook \"nginx -s reload\"; sleep 12h & wait $${!}; done'"
+    networks:
+      - story_net
