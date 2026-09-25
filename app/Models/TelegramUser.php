@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TelegramUser extends Model
 {
@@ -21,4 +22,9 @@ class TelegramUser extends Model
         'is_premium' => 'boolean',
         'is_bot' => 'boolean',
     ];
+
+    public function stories(): MorphMany
+    {
+        return $this->morphMany(Story::class, 'storyable');
+    }
 }

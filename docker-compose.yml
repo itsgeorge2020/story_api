@@ -1,67 +1,81 @@
 # ==========================================================
-#  story_api — самодостаточный стек
-#  Запуск:  cd projects/story_api && docker compose up -d
-#  Все данные БД берутся из .env этого же проекта.
+#  story_api — базовый compose
+#  Локально:  docker compose up -d
+#             (автоматически подхватит docker-compose.override.yml)
+#  Сервер:    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ==========================================================
 name: story_api
 
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: story_nginx
-    ports:
-      - "${APP_PORT:-8080}:80"
-    volumes:
-      - ./:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - php
-    networks:
-      - story_net
+    nginx:
+        image: nginx:alpine
+        container_name: story_nginx
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            - php
+        networks:
+            - story_net
 
-  php:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: story_php
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - story_net
-    user: "1000:1000"
+    php:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: story_api_php
+        container_name: story_php
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        depends_on:
+            - mysql
+            - redis
+        networks:
+            - story_net
+        user: "1000:1000"
 
-  mysql:
-    image: mysql:8.4
-    container_name: story_mysql
-    ports:
-      - "${FORWARD_DB_PORT:-3306}:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - story_mysql_data:/var/lib/mysql
-    networks:
-      - story_net
+    worker:
+        image: story_api_php
+        container_name: story_worker
+        command: php artisan queue:work redis --queue=deepseek --tries=3 --timeout=120 --sleep=3
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            - mysql
+            - redis
+        networks:
+            - story_net
+        user: "1000:1000"
+        restart: unless-stopped
 
-  redis:
-    image: redis:alpine
-    container_name: story_redis
-    ports:
-      - "${FORWARD_REDIS_PORT:-6379}:6379"
-    networks:
-      - story_net
+    mysql:
+        image: mysql:8.4
+        container_name: story_mysql
+        ports:
+            - "${FORWARD_DB_PORT:-3306}:3306"   # host:container
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - story_mysql_data:/var/lib/mysql
+        networks:
+            - story_net
+
+    redis:
+        image: redis:alpine
+        container_name: story_redis
+        ports:
+            - "${FORWARD_REDIS_PORT:-6379}:6379"   # host:container
+        networks:
+            - story_net
 
 networks:
-  story_net:
-    driver: bridge
+    story_net:
+        driver: bridge
 
 volumes:
-  story_mysql_data:
+    story_mysql_data:
