@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Contracts\UserInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class TelegramUser extends Model
+class TelegramUser extends Model implements UserInterface
 {
     protected $fillable = [
         'telegram_id',
+        'chat_id',
         'first_name',
         'last_name',
         'username',
@@ -19,6 +21,7 @@ class TelegramUser extends Model
 
     protected $casts = [
         'telegram_id' => 'integer',
+        'chat_id' => 'integer',
         'is_premium' => 'boolean',
         'is_bot' => 'boolean',
     ];

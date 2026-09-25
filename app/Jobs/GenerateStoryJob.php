@@ -5,7 +5,9 @@ namespace App\Jobs;
 use App\Actions\Story\SaveGeneratedStoryAction;
 use App\Contracts\TextPromptServiceInterface;
 use App\Contracts\TextRequestServiceInterface;
+use App\Contracts\UserInterface;
 use App\DTO\CreateStoryTextExerciseDTO;
+use App\Enums\StorySourceEnum;
 use App\Exceptions\DeepSeekException;
 use App\Exceptions\GenerateException;
 use Illuminate\Bus\Queueable;
@@ -25,7 +27,9 @@ class GenerateStoryJob implements ShouldQueue
     public array $backoff = [10, 30, 60];
 
     public function __construct(
-        private readonly CreateStoryTextExerciseDTO $exercise
+        private readonly CreateStoryTextExerciseDTO $exercise,
+        private readonly UserInterface $user,
+        private readonly StorySourceEnum $source
     ) {}
 
     /**
@@ -50,7 +54,7 @@ class GenerateStoryJob implements ShouldQueue
             throw $exception;
         }
 
-        $saveAction->handle($this->exercise, $story);
+        $saveAction->handle($this->exercise, $story, $this->user, $this->source);
     }
 
     public function failed(Throwable $exception): void
