@@ -45,4 +45,13 @@ readonly class CreateStoryTextExerciseDTO
     {
         return $this->type;
     }
+
+    public function toArray(): array
+    {
+        return [
+            'child'       => $this->child->toArray(),
+            'requestText' => $this->requestText,
+            'type'        => $this->type->value,
+        ];
+    }
 }

@@ -21,6 +21,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+        image: story_api_php
         container_name: story_php
         working_dir: /var/www/html
         volumes:
@@ -34,9 +35,26 @@ services:
             - story_net
         user: "1000:1000"
 
+    worker:
+        image: story_api_php
+        container_name: story_worker
+        command: php artisan queue:work redis --queue=deepseek --tries=3 --timeout=120 --sleep=3
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            - mysql
+            - redis
+        networks:
+            - story_net
+        user: "1000:1000"
+        restart: unless-stopped
+
     mysql:
         image: mysql:8.4
         container_name: story_mysql
+        ports:
+            - "${FORWARD_DB_PORT:-3306}:3306"   # host:container
         environment:
             MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
             MYSQL_DATABASE: ${DB_DATABASE}
@@ -50,6 +68,8 @@ services:
     redis:
         image: redis:alpine
         container_name: story_redis
+        ports:
+            - "${FORWARD_REDIS_PORT:-6379}:6379"   # host:container
         networks:
             - story_net
 

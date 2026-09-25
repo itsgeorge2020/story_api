@@ -10,6 +10,7 @@ enum StoryStatusEnum: string
 
     case PENDING = 'pending';
     case PROCESSING = 'processing';
+    case READY = 'ready';
     case COMPLETED = 'completed';
     case FAILED = 'failed';
 
