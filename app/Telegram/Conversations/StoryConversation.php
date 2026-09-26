@@ -2,6 +2,13 @@
 
 namespace App\Telegram\Conversations;
 
+use App\Actions\Story\TelegramUserCreateOrUpdateAction;
+use App\DTO\ChildDTO;
+use App\DTO\CreateStoryTextExerciseDTO;
+use App\DTO\TelegramUserDTO;
+use App\Enums\StorySourceEnum;
+use App\Enums\StoryTypeEnum;
+use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
 use Psr\SimpleCache\InvalidArgumentException;
 use SergiX44\Nutgram\Conversations\Conversation;
@@ -17,35 +24,37 @@ class StoryConversation extends Conversation
     public ?string $gender = null;
     public ?int $age = null;
     public ?string $storyType = null;
+    private TelegramUser $telegramUser;
+
+    public function __construct(
+        private readonly TelegramUserCreateOrUpdateAction $userCreateOrUpdateAction
+    ) {}
 
     // Шаг 1: Спрашиваем имя
-
     /**
      * @throws InvalidArgumentException
      */
     public function start(Nutgram $bot): void
     {
-        // Получаем данные пользователя из Telegram
         $user = $bot->user();
 
-        // Создаём или обновляем запись (firstOrCreate)
-        TelegramUser::updateOrCreate(
-            ['telegram_id' => $user->id], // условие поиска
-            [
-                'first_name'    => $user->first_name,
-                'last_name'     => $user->last_name,
-                'username'      => $user->username,
-                'language_code' => $user->language_code,
-                'is_premium'    => $user->is_premium ?? false,
-            ]
+        $telegramUserDTO = new TelegramUserDTO(
+            userId: $bot->userId(),
+            chatId: $bot->chatId(),
+            userName: $user->username,
+            languageCode: $user->language_code,
+            isPremium: $user->is_premium,
+            firstName: $user->first_name,
+            lastName: $user->last_name
         );
+
+        $this->telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
 
         $bot->sendMessage('Привет! Как зовут ребенка?');
         $this->next('askGender');
     }
 
     // Шаг 2: Спрашиваем пол (с кнопками)
-
     /**
      * @throws InvalidArgumentException
      */
@@ -64,7 +73,6 @@ class StoryConversation extends Conversation
     }
 
     // Шаг 3: Спрашиваем возраст
-
     /**
      * @throws InvalidArgumentException
      */
@@ -88,7 +96,6 @@ class StoryConversation extends Conversation
     }
 
     // Шаг 4: Спрашиваем тип сказки (с кнопками)
-
     /**
      * @throws InvalidArgumentException
      */
@@ -115,7 +122,6 @@ class StoryConversation extends Conversation
     }
 
     // Шаг 5: Спрашиваем текст проблемы
-
     /**
      * @throws InvalidArgumentException
      */
@@ -149,7 +155,6 @@ class StoryConversation extends Conversation
     }
 
     // Шаг 6: Генерируем и отправляем (заглушка)
-
     /**
      * @throws InvalidArgumentException
      */
@@ -157,15 +162,21 @@ class StoryConversation extends Conversation
     {
         $problemText = $bot->message()->text;
 
-        // Пока просто выводим собранные данные для проверки
-        $bot->sendMessage(
-            "Собрано:\n" .
-            "Имя: {$this->childName}\n" .
-            "Пол: {$this->gender}\n" .
-            "Возраст: {$this->age}\n" .
-            "Тип: {$this->storyType}\n" .
-            "Проблема: {$problemText}"
+        $child = new ChildDTO(
+            name: $this->childName,
+            age: $this->age,
+            gender: $this->gender
         );
+
+        $exercise = new CreateStoryTextExerciseDTO(
+            child: $child,requestText:
+            $problemText,type:
+            StoryTypeEnum::getByCase($this->storyType)
+        );
+
+        GenerateStoryJob::dispatch($exercise, $this->telegramUser, StorySourceEnum::TELEGRAM);
+
+        $bot->sendMessage('Ищу подходящую сказку...');
 
         $this->end();
     }
