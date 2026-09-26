@@ -42,7 +42,7 @@ class SendStoryToTelegramJob implements ShouldQueue
         foreach (str_split($text, 4000) as $chunk) {
             $bot->sendMessage(
                 text: $chunk,
-                chat_id: $this->user->telegram_id,
+                chat_id: $this->user->chat_id,
             );
         }
     }

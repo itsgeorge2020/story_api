@@ -34,7 +34,7 @@ class SendFailureToTelegramJob implements ShouldQueue
 
         $bot->sendMessage(
             text: self::FAILURE_MESSAGE,
-            chat_id: $this->user->telegram_id,
+            chat_id: $this->user->chat_id,
         );
     }
 }

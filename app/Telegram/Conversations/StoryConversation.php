@@ -5,7 +5,7 @@ namespace App\Telegram\Conversations;
 use App\Actions\Story\TelegramUserCreateOrUpdateAction;
 use App\DTO\ChildDTO;
 use App\DTO\CreateStoryTextExerciseDTO;
-use App\DTO\TegeramUserDTO;
+use App\DTO\TelegramUserDTO;
 use App\Enums\StorySourceEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
@@ -38,7 +38,7 @@ class StoryConversation extends Conversation
     {
         $user = $bot->user();
 
-        $telegramUserDTO = new TegeramUserDTO(
+        $telegramUserDTO = new TelegramUserDTO(
             userId: $bot->userId(),
             chatId: $bot->chatId(),
             userName: $user->username,

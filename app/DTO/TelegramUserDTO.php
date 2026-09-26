@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-class TegeramUserDTO
+class TelegramUserDTO
 {
     public function __construct(
         private int $userId,
