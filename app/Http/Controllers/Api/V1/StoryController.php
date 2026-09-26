@@ -16,8 +16,7 @@ class StoryController extends BaseController
         $user = TelegramUser::query()->find(1)->first();
         $exercise = CreateStoryTextExerciseDTO::createFromRequest($request);
 
-        GenerateStoryJob::dispatch($exercise, $user, StorySourceEnum::TELEGRAM)
-            ->onQueue('deepseek');
+        GenerateStoryJob::dispatch($exercise, $user, StorySourceEnum::TELEGRAM);
 
         return $this->sendResponse();
     }

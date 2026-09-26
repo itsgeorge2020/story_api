@@ -174,8 +174,7 @@ class StoryConversation extends Conversation
             StoryTypeEnum::getByCase($this->storyType)
         );
 
-        GenerateStoryJob::dispatch($exercise, $this->telegramUser, StorySourceEnum::TELEGRAM)
-            ->onQueue('deepseek');
+        GenerateStoryJob::dispatch($exercise, $this->telegramUser, StorySourceEnum::TELEGRAM);
 
         $bot->sendMessage('Ищу подходящую сказку...');
 
