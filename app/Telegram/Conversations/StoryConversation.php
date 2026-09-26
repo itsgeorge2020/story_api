@@ -24,7 +24,7 @@ class StoryConversation extends Conversation
     public ?string $gender = null;
     public ?int $age = null;
     public ?string $storyType = null;
-    private TelegramUser $telegramUser;
+    private ?TelegramUser $telegramUser = null;
 
     public function __construct(
         private readonly TelegramUserCreateOrUpdateAction $userCreateOrUpdateAction
@@ -43,7 +43,7 @@ class StoryConversation extends Conversation
             chatId: $bot->chatId(),
             userName: $user->username,
             languageCode: $user->language_code,
-            isPremium: $user->is_premium,
+            isPremium: $user->is_premium ?? false,
             firstName: $user->first_name,
             lastName: $user->last_name
         );
@@ -174,10 +174,14 @@ class StoryConversation extends Conversation
             StoryTypeEnum::getByCase($this->storyType)
         );
 
+        if (!$this->telegramUser) {
+            $bot->sendMessage('Что-то пошло не так...');
+            $this->end();
+        }
+
         GenerateStoryJob::dispatch($exercise, $this->telegramUser, StorySourceEnum::TELEGRAM);
 
         $bot->sendMessage('Ищу подходящую сказку...');
-
         $this->end();
     }
 }
