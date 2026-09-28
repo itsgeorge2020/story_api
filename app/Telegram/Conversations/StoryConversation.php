@@ -64,7 +64,7 @@ class StoryConversation extends Conversation
 
         $this->telegramUserId = $telegramUser->id;
 
-        $bot->sendMessage('Привет! Как зовут ребенка?');
+        $bot->sendMessage('Как зовут ребенка?');
         $this->next('askGender');
     }
 
@@ -126,27 +126,25 @@ class StoryConversation extends Conversation
 
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
             ->addRow(
-                KeyboardButton::make('Научить'),
-                KeyboardButton::make('Объяснить'),
-                KeyboardButton::make('Решить проблему')
+                KeyboardButton::make('Решить проблему'),
+                KeyboardButton::make('Объяснить')
             );
 
-        $bot->sendMessage('Какую сказку хочешь?', reply_markup: $keyboard);
-        $this->next('askProblem');
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
+        $this->next('askRequest');
     }
 
     // Шаг 5: Спрашиваем текст проблемы
     /**
      * @throws InvalidArgumentException
      */
-    public function askProblem(Nutgram $bot): void
+    public function askRequest(Nutgram $bot): void
     {
         $text = $bot->message()->text;
 
         $typeMap = [
-            'Научить' => 'teach',
-            'Объяснить' => 'explain',
-            'Решить проблему' => 'problem',
+            'Объяснить' => StoryTypeEnum::EXPLAIN->value,
+            'Решить проблему' => StoryTypeEnum::PROBLEM->value,
         ];
 
         if (!isset($typeMap[$text])) {
@@ -157,9 +155,8 @@ class StoryConversation extends Conversation
         $this->storyType = $typeMap[$text];
 
         $prompts = [
-            'teach' => 'Чему нужно научить?',
-            'explain' => 'Что нужно объяснить?',
-            'problem' => 'Опиши проблему:',
+            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? (Например: «Почему небо синее?», «Как летает самолет?» и т.д.)',
+            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. (Например: «Не убирает игрушки.», «Дерётся.» и т.д.)',
         ];
 
         $bot->sendMessage($prompts[$this->storyType],
