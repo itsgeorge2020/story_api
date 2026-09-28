@@ -36,7 +36,8 @@ return [
     ],
 
     'deepseek' => [
-        'key' => env('DEEPSEEK_API_KEY')
+        'key' => env('DEEPSEEK_API_KEY'),
+        'maxTokens' => env('DEEPSEEK_MAX_TOKENS', 12000)
     ],
 
 ];
