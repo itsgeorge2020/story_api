@@ -11,7 +11,6 @@ use App\Enums\StoryStatusEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
-use Illuminate\Support\Facades\Log;
 use Psr\SimpleCache\InvalidArgumentException;
 use SergiX44\Nutgram\Conversations\Conversation;
 use SergiX44\Nutgram\Nutgram;
@@ -63,16 +62,6 @@ class StoryConversation extends Conversation
             $this->end();
             return;
         }
-
-        Log::info('Conversation start', [
-            'bot_user_id' => $bot->userId(),
-            'bot_chat_id' => $bot->chatId(),
-            'dto_user_id' => $telegramUserDTO->getUserId(),
-            'dto_chat_id' => $telegramUserDTO->getChatId(),
-            'db_user_id' => $telegramUser->id,
-            'db_telegram_id' => $telegramUser->telegram_id,
-            'db_chat_id' => $telegramUser->chat_id,
-        ]);
 
         $lastChildData = $this->findLastChildData($telegramUser);
 
