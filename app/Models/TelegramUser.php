@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use App\Contracts\UserInterface;
+use App\Enums\StoryStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TelegramUser extends Model implements UserInterface
 {
-    private const DAILY_LIMIT = 10;
-
     protected $fillable = [
         'telegram_id',
         'chat_id',
@@ -36,9 +35,10 @@ class TelegramUser extends Model implements UserInterface
     public function hasDailyLimit(): bool
     {
         $todayCount = $this->stories()
+            ->whereNot('status', StoryStatusEnum::FAILED)
             ->whereDate('created_at', today())
             ->count();
 
-        return $todayCount >= self::DAILY_LIMIT;
+        return $todayCount >= (int) config('app.story.dailyLimit');
     }
 }

@@ -123,4 +123,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'story' => [
+        'dailyLimit' => env('STORY_DAILY_LIMIT', 99),
+    ]
+
 ];
