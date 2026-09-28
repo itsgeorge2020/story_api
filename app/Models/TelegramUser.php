@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TelegramUser extends Model implements UserInterface
 {
+    private const DAILY_LIMIT = 10;
+
     protected $fillable = [
         'telegram_id',
         'chat_id',
@@ -29,5 +31,14 @@ class TelegramUser extends Model implements UserInterface
     public function stories(): MorphMany
     {
         return $this->morphMany(Story::class, 'storyable');
+    }
+
+    public function hasDailyLimit(): bool
+    {
+        $todayCount = $this->stories()
+            ->whereDate('created_at', today())
+            ->count();
+
+        return $todayCount >= self::DAILY_LIMIT;
     }
 }

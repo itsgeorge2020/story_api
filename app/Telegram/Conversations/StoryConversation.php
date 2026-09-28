@@ -50,6 +50,18 @@ class StoryConversation extends Conversation
 
         $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
 
+        if (!$telegramUser) {
+            $bot->sendMessage('😿 Что-то пошло не так...');
+            $this->end();
+            return;
+        }
+
+        if ($telegramUser->hasDailyLimit()) {
+            $bot->sendMessage('Лимит историй на сегодня исчерпан. Возвращайтесь пожалуйста завтра 🌙');
+            $this->end();
+            return;
+        }
+
         $this->telegramUserId = $telegramUser->id;
 
         $bot->sendMessage('Привет! Как зовут ребенка?');
@@ -179,14 +191,14 @@ class StoryConversation extends Conversation
         $telegramUser = TelegramUser::query()->find($this->telegramUserId)->firstOrFail();
 
         if (!$telegramUser) {
-            $bot->sendMessage('Что-то пошло не так...');
+            $bot->sendMessage('😿 Что-то пошло не так...');
             $this->end();
             return;
         }
 
         GenerateStoryJob::dispatch($exercise, $telegramUser, StorySourceEnum::TELEGRAM);
 
-        $bot->sendMessage('Ищу подходящую сказку...');
+        $bot->sendMessage('🐈 Ищу подходящую сказку...');
         $this->end();
     }
 }

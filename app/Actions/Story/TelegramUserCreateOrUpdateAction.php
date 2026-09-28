@@ -7,7 +7,7 @@ use App\Models\TelegramUser;
 
 class TelegramUserCreateOrUpdateAction
 {
-    public function handle(TelegramUserDTO $user): TelegramUser
+    public function handle(TelegramUserDTO $user): ?TelegramUser
     {
         return TelegramUser::query()->updateOrCreate(
             [
