@@ -11,6 +11,7 @@ use App\Enums\StoryStatusEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
+use Illuminate\Support\Facades\Log;
 use Psr\SimpleCache\InvalidArgumentException;
 use SergiX44\Nutgram\Conversations\Conversation;
 use SergiX44\Nutgram\Nutgram;
@@ -25,7 +26,6 @@ class StoryConversation extends Conversation
     public ?string $gender = null;
     public ?int $age = null;
     public ?string $storyType = null;
-    public ?int $telegramUserId = null;
     public ?array $lastChildData = null;
 
     public function __construct(
@@ -64,7 +64,15 @@ class StoryConversation extends Conversation
             return;
         }
 
-        $this->telegramUserId = $telegramUser->id;
+        Log::info('Conversation start', [
+            'bot_user_id' => $bot->userId(),
+            'bot_chat_id' => $bot->chatId(),
+            'dto_user_id' => $telegramUserDTO->getUserId(),
+            'dto_chat_id' => $telegramUserDTO->getChatId(),
+            'db_user_id' => $telegramUser->id,
+            'db_telegram_id' => $telegramUser->telegram_id,
+            'db_chat_id' => $telegramUser->chat_id,
+        ]);
 
         $lastChildData = $this->findLastChildData($telegramUser);
 
@@ -248,8 +256,6 @@ class StoryConversation extends Conversation
         $telegramUser = TelegramUser::query()
             ->where('telegram_id', $bot->userId())
             ->first();
-
-//        $telegramUser = TelegramUser::query()->find($this->telegramUserId)->firstOrFail();
 
         if (!$telegramUser) {
             $bot->sendMessage('😿 Что-то пошло не так...');
