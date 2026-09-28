@@ -263,7 +263,7 @@ class StoryConversation extends Conversation
     {
         $lastStory = $user->stories()
             ->whereIn('status', [StoryStatusEnum::READY, StoryStatusEnum::COMPLETED])
-            ->latest()
+            ->latest('id')
             ->first();
 
         return $lastStory?->child_data;
