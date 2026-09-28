@@ -9,8 +9,8 @@ class TelegramTextFormatter
     public function format(string $text): string
     {
         $text = htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $text = preg_replace('/\%\%([^*]+)\%\%/u', '<i>$1</i>', $text);
-        $text = preg_replace('/\*\*([^*]+)\*\*/u', '<b>$1</b>', $text);
+        $text = preg_replace('/~([^~]+)~/u', '<i>$1</i>', $text);
+        $text = preg_replace('/\^([^\^]+)\^/u', '<b>$1</b>', $text);
 
         return trim($text);
     }
