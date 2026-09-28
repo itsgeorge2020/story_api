@@ -4,6 +4,7 @@ namespace App\Telegram\Jobs;
 
 use App\Models\Story;
 use App\Models\TelegramUser;
+use App\Telegram\Formatters\TelegramTextFormatter;
 use App\Telegram\Services\NutgramFactory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,15 +35,18 @@ class SendStoryToTelegramJob implements ShouldQueue
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function handle(NutgramFactory $nutgramFactory): void
-    {
+    public function handle(
+        NutgramFactory $nutgramFactory,
+        TelegramTextFormatter $formatter,
+    ): void {
         $bot = $nutgramFactory->make();
-        $text = $this->story->result_text ?? '';
+        $text = $formatter->format($this->story->result_text ?? '');
 
-        foreach (str_split($text, 4000) as $chunk) {
+        foreach ($formatter->splitIntoChunks($text) as $chunk) {
             $bot->sendMessage(
                 text: $chunk,
                 chat_id: $this->user->chat_id,
+                parse_mode: 'HTML',
             );
         }
     }

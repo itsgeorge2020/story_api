@@ -7,6 +7,7 @@ use App\DTO\ChildDTO;
 use App\DTO\CreateStoryTextExerciseDTO;
 use App\DTO\TelegramUserDTO;
 use App\Enums\StorySourceEnum;
+use App\Enums\StoryStatusEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
@@ -24,7 +25,7 @@ class StoryConversation extends Conversation
     public ?string $gender = null;
     public ?int $age = null;
     public ?string $storyType = null;
-    public ?int $telegramUserId = null;
+    public ?array $lastChildData = null;
 
     public function __construct(
         private readonly TelegramUserCreateOrUpdateAction $userCreateOrUpdateAction
@@ -50,10 +51,78 @@ class StoryConversation extends Conversation
 
         $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
 
-        $this->telegramUserId = $telegramUser->id;
+        if (!$telegramUser) {
+            $bot->sendMessage('😿 Что-то пошло не так...');
+            $this->end();
+            return;
+        }
 
-        $bot->sendMessage('Привет! Как зовут ребенка?');
+        if ($telegramUser->hasDailyLimit()) {
+            $bot->sendMessage('Лимит историй на сегодня исчерпан. Возвращайтесь пожалуйста завтра 🌙');
+            $this->end();
+            return;
+        }
+
+        $lastChildData = $this->findLastChildData($telegramUser);
+
+        if ($lastChildData) {
+            $this->lastChildData = $lastChildData;
+
+            $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
+                ->addRow(
+                    KeyboardButton::make('Да'),
+                    KeyboardButton::make('Нет')
+                );
+
+            $bot->sendMessage(
+                "Продолжим с «{$lastChildData['name']}»?",
+                reply_markup: $keyboard
+            );
+            $this->next('askContinue');
+            return;
+        }
+
+        // Нет сохранённого ребёнка — идём по старому сценарию
+        $bot->sendMessage('Как зовут ребенка?');
         $this->next('askGender');
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function askContinue(Nutgram $bot): void
+    {
+        $text = $bot->message()->text;
+
+        if (!in_array($text, ['Да', 'Нет'], true)) {
+            $bot->sendMessage('Пожалуйста, выбери «Да» или «Нет».');
+            return;
+        }
+
+        if ($text === 'Нет') {
+            // Пользователь хочет ввести нового ребёнка
+            $this->lastChildData = null;
+
+            $bot->sendMessage('Как зовут ребенка?',
+                reply_markup: ReplyKeyboardRemove::make(true)
+            );
+            $this->next('askGender');
+            return;
+        }
+
+        // «Да» — восстанавливаем данные из прошлой истории
+        $this->childName = $this->lastChildData['name'];
+        $this->age       = $this->lastChildData['age'];
+        $this->gender    = $this->lastChildData['gender'];
+
+        $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
+            ->addRow(
+                KeyboardButton::make('Решить проблему'),
+                KeyboardButton::make('Объяснить')
+            );
+
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
+        $this->next('askRequest');
     }
 
     // Шаг 2: Спрашиваем пол (с кнопками)
@@ -114,27 +183,25 @@ class StoryConversation extends Conversation
 
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
             ->addRow(
-                KeyboardButton::make('Научить'),
-                KeyboardButton::make('Объяснить'),
-                KeyboardButton::make('Решить проблему')
+                KeyboardButton::make('Решить проблему'),
+                KeyboardButton::make('Объяснить')
             );
 
-        $bot->sendMessage('Какую сказку хочешь?', reply_markup: $keyboard);
-        $this->next('askProblem');
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
+        $this->next('askRequest');
     }
 
     // Шаг 5: Спрашиваем текст проблемы
     /**
      * @throws InvalidArgumentException
      */
-    public function askProblem(Nutgram $bot): void
+    public function askRequest(Nutgram $bot): void
     {
         $text = $bot->message()->text;
 
         $typeMap = [
-            'Научить' => 'teach',
-            'Объяснить' => 'explain',
-            'Решить проблему' => 'problem',
+            'Объяснить' => StoryTypeEnum::EXPLAIN->value,
+            'Решить проблему' => StoryTypeEnum::PROBLEM->value,
         ];
 
         if (!isset($typeMap[$text])) {
@@ -145,9 +212,8 @@ class StoryConversation extends Conversation
         $this->storyType = $typeMap[$text];
 
         $prompts = [
-            'teach' => 'Чему нужно научить?',
-            'explain' => 'Что нужно объяснить?',
-            'problem' => 'Опиши проблему:',
+            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? (Например: «Почему огурец зеленый?», «Как летает самолет?» и т.д.)',
+            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. (Например: «Не убирает игрушки», «Дерётся» и т.д.)',
         ];
 
         $bot->sendMessage($prompts[$this->storyType],
@@ -176,17 +242,29 @@ class StoryConversation extends Conversation
             StoryTypeEnum::getByCase($this->storyType)
         );
 
-        $telegramUser = TelegramUser::query()->find($this->telegramUserId)->firstOrFail();
+        $telegramUser = TelegramUser::query()
+            ->where('telegram_id', $bot->userId())
+            ->first();
 
         if (!$telegramUser) {
-            $bot->sendMessage('Что-то пошло не так...');
+            $bot->sendMessage('😿 Что-то пошло не так...');
             $this->end();
             return;
         }
 
         GenerateStoryJob::dispatch($exercise, $telegramUser, StorySourceEnum::TELEGRAM);
 
-        $bot->sendMessage('Ищу подходящую сказку...');
+        $bot->sendMessage('🐈 Ищу подходящую сказку...');
         $this->end();
+    }
+
+    private function findLastChildData(TelegramUser $user): ?array
+    {
+        $lastStory = $user->stories()
+            ->whereIn('status', [StoryStatusEnum::READY, StoryStatusEnum::COMPLETED])
+            ->latest('id')
+            ->first();
+
+        return $lastStory?->child_data;
     }
 }

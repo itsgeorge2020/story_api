@@ -21,7 +21,7 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
             $response = DeepSeekClient::build(config('services.deepseek.key'))
                 ->withModel(Models::V4_FLASH->value)
                 ->setTemperature(1.0)
-                ->setMaxTokens(6000)
+                ->setMaxTokens(config('services.deepseek.maxTokens'))
                 ->setResponseFormat('json_object')
                 ->query($prompt)
                 ->run();

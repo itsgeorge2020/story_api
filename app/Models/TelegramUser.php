@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\UserInterface;
+use App\Enums\StoryStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -29,5 +30,15 @@ class TelegramUser extends Model implements UserInterface
     public function stories(): MorphMany
     {
         return $this->morphMany(Story::class, 'storyable');
+    }
+
+    public function hasDailyLimit(): bool
+    {
+        $todayCount = $this->stories()
+            ->whereNot('status', StoryStatusEnum::FAILED)
+            ->whereDate('created_at', today())
+            ->count();
+
+        return $todayCount >= (int) config('app.story.dailyLimit');
     }
 }
