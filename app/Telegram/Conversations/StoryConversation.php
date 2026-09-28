@@ -155,8 +155,8 @@ class StoryConversation extends Conversation
         $this->storyType = $typeMap[$text];
 
         $prompts = [
-            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? (Например: «Почему небо синее?», «Как летает самолет?» и т.д.)',
-            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. (Например: «Не убирает игрушки.», «Дерётся.» и т.д.)',
+            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? (Например: «Почему огурец зеленый?», «Как летает самолет?» и т.д.)',
+            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. (Например: «Не убирает игрушки», «Дерётся» и т.д.)',
         ];
 
         $bot->sendMessage($prompts[$this->storyType],
