@@ -7,6 +7,7 @@ use App\DTO\ChildDTO;
 use App\DTO\CreateStoryTextExerciseDTO;
 use App\DTO\TelegramUserDTO;
 use App\Enums\StorySourceEnum;
+use App\Enums\StoryStatusEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
@@ -25,6 +26,7 @@ class StoryConversation extends Conversation
     public ?int $age = null;
     public ?string $storyType = null;
     public ?int $telegramUserId = null;
+    public ?array $lastChildData = null;
 
     public function __construct(
         private readonly TelegramUserCreateOrUpdateAction $userCreateOrUpdateAction
@@ -64,8 +66,66 @@ class StoryConversation extends Conversation
 
         $this->telegramUserId = $telegramUser->id;
 
+        $lastChildData = $this->findLastChildData($telegramUser);
+
+        if ($lastChildData) {
+            $this->lastChildData = $lastChildData;
+
+            $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
+                ->addRow(
+                    KeyboardButton::make('Да'),
+                    KeyboardButton::make('Нет')
+                );
+
+            $bot->sendMessage(
+                "Продолжим с «{$lastChildData['name']}»?",
+                reply_markup: $keyboard
+            );
+            $this->next('askContinue');
+            return;
+        }
+
+        // Нет сохранённого ребёнка — идём по старому сценарию
         $bot->sendMessage('Как зовут ребенка?');
         $this->next('askGender');
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function askContinue(Nutgram $bot): void
+    {
+        $text = $bot->message()->text;
+
+        if (!in_array($text, ['Да', 'Нет'], true)) {
+            $bot->sendMessage('Пожалуйста, выбери «Да» или «Нет».');
+            return;
+        }
+
+        if ($text === 'Нет') {
+            // Пользователь хочет ввести нового ребёнка
+            $this->lastChildData = null;
+
+            $bot->sendMessage('Как зовут ребенка?',
+                reply_markup: ReplyKeyboardRemove::make(true)
+            );
+            $this->next('askGender');
+            return;
+        }
+
+        // «Да» — восстанавливаем данные из прошлой истории
+        $this->childName = $this->lastChildData['name'];
+        $this->age       = $this->lastChildData['age'];
+        $this->gender    = $this->lastChildData['gender'];
+
+        $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
+            ->addRow(
+                KeyboardButton::make('Решить проблему'),
+                KeyboardButton::make('Объяснить')
+            );
+
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
+        $this->next('askRequest');
     }
 
     // Шаг 2: Спрашиваем пол (с кнопками)
@@ -197,5 +257,15 @@ class StoryConversation extends Conversation
 
         $bot->sendMessage('🐈 Ищу подходящую сказку...');
         $this->end();
+    }
+
+    private function findLastChildData(TelegramUser $user): ?array
+    {
+        $lastStory = $user->stories()
+            ->whereIn('status', [StoryStatusEnum::READY, StoryStatusEnum::COMPLETED])
+            ->latest()
+            ->first();
+
+        return $lastStory?->child_data;
     }
 }
