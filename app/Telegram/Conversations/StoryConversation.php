@@ -245,7 +245,11 @@ class StoryConversation extends Conversation
             StoryTypeEnum::getByCase($this->storyType)
         );
 
-        $telegramUser = TelegramUser::query()->find($this->telegramUserId)->firstOrFail();
+        $telegramUser = TelegramUser::query()
+            ->where('telegram_id', $bot->userId())
+            ->first();
+
+//        $telegramUser = TelegramUser::query()->find($this->telegramUserId)->firstOrFail();
 
         if (!$telegramUser) {
             $bot->sendMessage('😿 Что-то пошло не так...');
