@@ -60,6 +60,14 @@ return [
             'report' => false,
         ],
 
+        'generated_images' => [
+            'driver'     => 'local',
+            'root'       => storage_path('app/public/generated_images'),
+            'url'        => env('APP_URL') . '/storage/generated_images',
+            'visibility' => 'public',
+            'throw'      => false,
+        ]
+
     ],
 
     /*

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\GenerateTexts;
 
 use App\Contracts\TextRequestServiceInterface;
 use App\Exceptions\DeepSeekException;

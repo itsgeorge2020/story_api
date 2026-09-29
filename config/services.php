@@ -40,4 +40,8 @@ return [
         'maxTokens' => env('DEEPSEEK_MAX_TOKENS', 12000)
     ],
 
+    'cloudflare' => [
+        'accountId' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'apiToken' => env('CLOUDFLARE_API_TOKEN')
+    ]
 ];
