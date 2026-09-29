@@ -47,7 +47,7 @@ class GenerateStoryJob implements ShouldQueue
     ): void {
         try {
             $prompt = $textPromptService->createPrompt($this->exercise);
-            $story  = $textRequestService->send($prompt);
+            $storyData  = $textRequestService->send($prompt);
         } catch (GenerateException $exception) {
             // модель вернула мусор — ретраить бессмысленно
             $this->fail($exception);
@@ -58,7 +58,12 @@ class GenerateStoryJob implements ShouldQueue
             throw $exception;
         }
 
-        $saveAction->handle($this->exercise, $story, $this->user, $this->source);
+        $saveAction->handle(
+            exercise: $this->exercise,
+            storyData: $storyData,
+            user: $this->user,
+            source: $this->source
+        );
     }
 
     public function failed(Throwable $exception): void

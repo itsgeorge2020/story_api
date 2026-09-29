@@ -4,6 +4,7 @@ namespace App\Actions\Story;
 
 use App\Contracts\UserInterface;
 use App\DTO\CreateStoryTextExerciseDTO;
+use App\DTO\GeneratedTextDTO;
 use App\Enums\StorySourceEnum;
 use App\Enums\StoryStatusEnum;
 use App\Events\StoryGeneratedEvent;
@@ -13,7 +14,7 @@ class SaveGeneratedStoryAction
 {
     public function handle(
         CreateStoryTextExerciseDTO $exercise,
-        string $text,
+        GeneratedTextDTO $storyData,
         UserInterface $user,
         StorySourceEnum $source = StorySourceEnum::TELEGRAM
     ): Story
@@ -23,7 +24,8 @@ class SaveGeneratedStoryAction
             'type'         => $exercise->getType(),
             'status'       => StoryStatusEnum::READY,
             'request_text' => $exercise->getRequestText(),
-            'result_text'  => $text,
+            'result_text'  => $storyData->getText(),
+            'cover_description' => $storyData->getCoverDescription(),
             'child_data'   => $exercise->getChild()->toArray(),
         ]);
 
