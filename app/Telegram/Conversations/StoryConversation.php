@@ -11,6 +11,7 @@ use App\Enums\StoryStatusEnum;
 use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
+use Illuminate\Support\Arr;
 use Psr\SimpleCache\InvalidArgumentException;
 use SergiX44\Nutgram\Conversations\Conversation;
 use SergiX44\Nutgram\Nutgram;
@@ -26,6 +27,7 @@ class StoryConversation extends Conversation
     public ?int $age = null;
     public ?string $storyType = null;
     public ?array $lastChildData = null;
+    public ?string $requestText = null;
 
     public function __construct(
         private readonly TelegramUserCreateOrUpdateAction $userCreateOrUpdateAction
@@ -184,7 +186,8 @@ class StoryConversation extends Conversation
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
             ->addRow(
                 KeyboardButton::make('Решить проблему'),
-                KeyboardButton::make('Объяснить')
+                KeyboardButton::make('Объяснить'),
+                KeyboardButton::make('Любая сказка')
             );
 
         $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
@@ -200,8 +203,9 @@ class StoryConversation extends Conversation
         $text = $bot->message()->text;
 
         $typeMap = [
-            'Объяснить' => StoryTypeEnum::EXPLAIN->value,
+            'Объяснить'       => StoryTypeEnum::EXPLAIN->value,
             'Решить проблему' => StoryTypeEnum::PROBLEM->value,
+            'Любая сказка'    => 'any',
         ];
 
         if (!isset($typeMap[$text])) {
@@ -211,14 +215,46 @@ class StoryConversation extends Conversation
 
         $this->storyType = $typeMap[$text];
 
+        if ($this->storyType === 'any') {
+            $randomType = StoryTypeEnum::random();
+            $this->storyType  = $randomType->value;
+            $this->requestText = Arr::random(config("topics.{$this->storyType}"));
+
+            $this->next('generate');
+            return;
+        }
+
         $prompts = [
-            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? (Например: «Почему огурец зеленый?», «Как летает самолет?» и т.д.)',
-            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. (Например: «Не убирает игрушки», «Дерётся» и т.д.)',
+            StoryTypeEnum::EXPLAIN->value => 'Что нужно объяснить? ...',
+            StoryTypeEnum::PROBLEM->value => 'Опиши проблему. ...',
         ];
 
-        $bot->sendMessage($prompts[$this->storyType],
+        $bot->sendMessage(
+            text: $prompts[$this->storyType],
             reply_markup: ReplyKeyboardRemove::make(true)
         );
+        $this->next('askRequestText');
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function askRequestText(Nutgram $bot): void
+    {
+        $text = trim($bot->message()->text ?? '');
+
+        if ($text === '') {
+            $bot->sendMessage('Пожалуйста, напиши текстом, что нужно.');
+            return;
+        }
+
+        if (mb_strlen($text) > 100) {
+            $bot->sendMessage('Слишком длинный текст. Попробуй описать короче (до 100 символов).');
+            return;
+        }
+
+        $this->requestText = $text;
+
         $this->next('generate');
     }
 
@@ -228,8 +264,6 @@ class StoryConversation extends Conversation
      */
     public function generate(Nutgram $bot): void
     {
-        $problemText = $bot->message()->text;
-
         $child = new ChildDTO(
             name: $this->childName,
             age: $this->age,
@@ -237,9 +271,9 @@ class StoryConversation extends Conversation
         );
 
         $exercise = new CreateStoryTextExerciseDTO(
-            child: $child,requestText:
-            $problemText,type:
-            StoryTypeEnum::getByCase($this->storyType)
+            child: $child,
+            requestText: $this->requestText,
+            type: StoryTypeEnum::from($this->storyType),
         );
 
         $telegramUser = TelegramUser::query()

@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use App\Traits\EnumTrait;
+use Illuminate\Support\Arr;
 
 enum StoryTypeEnum: string
 {
@@ -19,5 +20,10 @@ enum StoryTypeEnum: string
             self::EXPLAIN => 'Объяснить',
             self::PROBLEM => 'Решить проблему',
         };
+    }
+
+    public static function random(): self
+    {
+        return Arr::random(self::cases());
     }
 }
