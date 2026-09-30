@@ -210,7 +210,7 @@ class StoryConversation extends Conversation
             $this->requestText = Arr::random(config("topics.{$this->storyType}"));
 
             $bot->sendMessage(
-                text: '🎲 Выбираю любую сказку...',
+                text: '😽 Выбираю любую сказку...',
                 reply_markup: ReplyKeyboardRemove::make(true)
             );
 
