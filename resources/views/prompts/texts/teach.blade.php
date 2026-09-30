@@ -13,7 +13,7 @@
 - Общее количество маркеров для иллюстраций должно быть 3-4 штуки, поэтому вставляй их там, где они действительно необходимы.
 - Говори тепло, просто, без сложных слов.
 
-@include('prompts.partials.json_contract', [
+@include('prompts.texts.partials.json_contract', [
     'successCode' => 0,
     'successMessageDescription' => 'текст сказки с маркерами [ILLUSTRATION: ...]',
     'errorCode' => 1000,

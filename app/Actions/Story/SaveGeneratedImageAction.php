@@ -3,7 +3,6 @@
 namespace App\Actions\Story;
 
 use App\Enums\GeneratedImageTypeEnum;
-use App\Events\ImageGeneratedEvent;
 use App\Models\Story;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,13 +14,11 @@ class SaveGeneratedImageAction
 
         Storage::disk('generated_images')->writeStream($filename, $stream);
 
-        $image = $story->generatedImages()->create([
+        $story->generatedImages()->create([
             'type'     => GeneratedImageTypeEnum::COVER,
             'disk'     => 'generated_images',
             'filename' => $filename,
         ]);
-
-        ImageGeneratedEvent::dispatch($image);
     }
 
     private function buildFilename(int $storyId): string

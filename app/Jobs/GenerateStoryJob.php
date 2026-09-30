@@ -59,12 +59,14 @@ class GenerateStoryJob implements ShouldQueue
             throw $exception;
         }
 
-        $saveAction->handle(
+        $story = $saveAction->handle(
             exercise: $this->exercise,
             storyData: $storyData,
             user: $this->user,
             source: $this->source
         );
+
+        GenerateStoryImageJob::dispatch($story);
     }
 
     public function failed(Throwable $exception): void

@@ -2,13 +2,13 @@
 
 namespace App\Telegram\Listeners;
 
-use App\Events\StoryGeneratedEvent;
+use App\Events\StoryReadyEvent;
 use App\Models\TelegramUser;
 use App\Telegram\Jobs\SendStoryToTelegramJob;
 
 class SendStoryToTelegramListener
 {
-    public function handle(StoryGeneratedEvent $event): void
+    public function handle(StoryReadyEvent $event): void
     {
         $story = $event->story;
         $user  = $story->storyable;
@@ -16,10 +16,6 @@ class SendStoryToTelegramListener
         if (!$user instanceof TelegramUser) {
             return;
         }
-
-//        if ($user instanceof TelegramUser) {
-//            SendStoryToTelegramJob::dispatch($story, $user)->onQueue('telegram');
-//        }
 
         SendStoryToTelegramJob::dispatch($story, $user);
     }

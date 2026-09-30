@@ -5,6 +5,7 @@ namespace App\Telegram\Formatters;
 class TelegramTextFormatter
 {
     private const MAX_CHUNK_LENGTH = 4000;
+    private const MAX_CAPTION_LENGTH = 1024;
 
     public function format(string $text): string
     {
@@ -17,20 +18,21 @@ class TelegramTextFormatter
 
     public function splitIntoChunks(string $text, int $maxLength = self::MAX_CHUNK_LENGTH): array
     {
-        $paragraphs = explode("\n\n", $text);
         $chunks = [];
         $buffer = '';
 
-        foreach ($paragraphs as $paragraph) {
-            $candidate = $buffer === '' ? $paragraph : $buffer . "\n\n" . $paragraph;
+        foreach (explode("\n\n", $text) as $paragraph) {
+            foreach ($this->splitOversized($paragraph, $maxLength) as $piece) {
+                $candidate = $buffer === '' ? $piece : $buffer . "\n\n" . $piece;
 
-            if (mb_strlen($candidate) > $maxLength) {
-                if ($buffer !== '') {
-                    $chunks[] = $buffer;
+                if (mb_strlen($candidate) > $maxLength) {
+                    if ($buffer !== '') {
+                        $chunks[] = $buffer;
+                    }
+                    $buffer = $piece;
+                } else {
+                    $buffer = $candidate;
                 }
-                $buffer = $paragraph;
-            } else {
-                $buffer = $candidate;
             }
         }
 
@@ -39,5 +41,52 @@ class TelegramTextFormatter
         }
 
         return $chunks;
+    }
+
+    public function splitForPhoto(string $text): array
+    {
+        $text = trim($text);
+
+        if ($text === '') {
+            return ['caption' => '', 'messages' => []];
+        }
+
+        $captionChunks = $this->splitIntoChunks($text, self::MAX_CAPTION_LENGTH);
+        $caption = array_shift($captionChunks);
+        $rest = trim(implode("\n\n", $captionChunks));
+
+        return [
+            'caption'  => $caption,
+            'messages' => $rest === '' ? [] : $this->splitIntoChunks($rest),
+        ];
+    }
+
+    private function splitOversized(string $paragraph, int $maxLength): array
+    {
+        if (mb_strlen($paragraph) <= $maxLength) {
+            return [$paragraph];
+        }
+
+        $pieces = [];
+        $buffer = '';
+
+        foreach (explode(' ', $paragraph) as $word) {
+            $candidate = $buffer === '' ? $word : $buffer . ' ' . $word;
+
+            if (mb_strlen($candidate) > $maxLength) {
+                if ($buffer !== '') {
+                    $pieces[] = $buffer;
+                }
+                $buffer = $word;
+            } else {
+                $buffer = $candidate;
+            }
+        }
+
+        if ($buffer !== '') {
+            $pieces[] = $buffer;
+        }
+
+        return $pieces;
     }
 }

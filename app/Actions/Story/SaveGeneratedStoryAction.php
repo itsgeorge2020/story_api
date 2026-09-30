@@ -7,7 +7,6 @@ use App\DTO\CreateStoryTextExerciseDTO;
 use App\DTO\GeneratedTextDTO;
 use App\Enums\StorySourceEnum;
 use App\Enums\StoryStatusEnum;
-use App\Events\StoryGeneratedEvent;
 use App\Models\Story;
 
 class SaveGeneratedStoryAction
@@ -19,18 +18,14 @@ class SaveGeneratedStoryAction
         StorySourceEnum $source = StorySourceEnum::TELEGRAM
     ): Story
     {
-        $story = $user->stories()->create([
+        return $user->stories()->create([
             'source'       => $source,
             'type'         => $exercise->getType(),
-            'status'       => StoryStatusEnum::PROCESSING,
+            'status'       => StoryStatusEnum::PENDING,
             'request_text' => $exercise->getRequestText(),
             'result_text'  => $storyData->getText(),
             'cover_description' => $storyData->getCoverDescription(),
             'child_data'   => $exercise->getChild()->toArray(),
         ]);
-
-        StoryGeneratedEvent::dispatch($story);
-
-        return $story;
     }
 }
