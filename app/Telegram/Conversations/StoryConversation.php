@@ -85,7 +85,7 @@ class StoryConversation extends Conversation
         }
 
         // Нет сохранённого ребёнка — идём по старому сценарию
-        $bot->sendMessage('Как зовут ребенка?');
+        $bot->sendMessage('Как назвать главного героя?');
         $this->next('askGender');
     }
 
@@ -105,7 +105,7 @@ class StoryConversation extends Conversation
             // Пользователь хочет ввести нового ребёнка
             $this->lastChildData = null;
 
-            $bot->sendMessage('Как зовут ребенка?',
+            $bot->sendMessage('Как назвать главного героя?',
                 reply_markup: ReplyKeyboardRemove::make(true)
             );
             $this->next('askGender');
@@ -136,7 +136,7 @@ class StoryConversation extends Conversation
                 KeyboardButton::make('Девочка')
             );
 
-        $bot->sendMessage('Выбери пол:', reply_markup: $keyboard);
+        $bot->sendMessage('Пол ребенка:', reply_markup: $keyboard);
         $this->next('askAge');
     }
 
@@ -209,12 +209,7 @@ class StoryConversation extends Conversation
             $this->storyType  = $randomType->value;
             $this->requestText = Arr::random(config("topics.{$this->storyType}"));
 
-            $bot->sendMessage(
-                text: '😽 Выбираю любую сказку...',
-                reply_markup: ReplyKeyboardRemove::make(true)
-            );
-
-            $this->next('generate');
+            $this->generate($bot);
             return;
         }
 
@@ -249,7 +244,7 @@ class StoryConversation extends Conversation
 
         $this->requestText = $text;
 
-        $this->next('generate');
+        $this->generate($bot);
     }
 
     // Шаг 6: Генерируем и отправляем (заглушка)
