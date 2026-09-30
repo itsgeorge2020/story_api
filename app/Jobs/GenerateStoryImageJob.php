@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Actions\Story\SaveGeneratedImageAction;
 use App\Contracts\ImageGenerationServiceInterface;
+use App\Enums\StoryStatusEnum;
+use App\Events\StoryReadyEvent;
 use App\Models\Story;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,14 +28,15 @@ class GenerateStoryImageJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
-        private readonly Story $story,
-        private readonly SaveGeneratedImageAction $saveAction
+        private readonly Story $story
     ) {}
 
-    public function handle(ImageGenerationServiceInterface $imageGen): void
-    {
-        // Идемпотентность: если картинка уже есть — не генерим заново
+    public function handle(
+        ImageGenerationServiceInterface $imageGen,
+        SaveGeneratedImageAction $saveAction
+    ): void {
         if ($this->story->cover()->exists()) {
+            $this->markReady();
             return;
         }
 
@@ -41,17 +44,20 @@ class GenerateStoryImageJob implements ShouldQueue
 
         if ($prompt === '') {
             Log::channel('generationImage')
-                ->warning("Story {$this->story->id}: cover_description пуст, пропускаем");
+                ->warning("Story {$this->story->id}: cover_description пуст, отправляем без обложки");
+            $this->markReady();
             return;
         }
 
         $stream = $imageGen->generateStream($prompt);
 
         try {
-            $this->saveAction->handle($this->story, $stream);
+            $saveAction->handle($this->story, $stream);
         } finally {
             fclose($stream);
         }
+
+        $this->markReady();
     }
 
     public function failed(Throwable $exception): void
@@ -59,5 +65,21 @@ class GenerateStoryImageJob implements ShouldQueue
         Log::channel('generationImage')->error(
             "[GenerateStoryImageJob failed for storyId: {$this->story->id}] " . $exception->getMessage()
         );
+
+        $this->markReady();
+    }
+
+    private function markReady(): void
+    {
+        $story = $this->story->fresh();
+
+        if ($story === null || $story->status !== StoryStatusEnum::PENDING) {
+            return;
+        }
+
+        $story->status = StoryStatusEnum::READY;
+        $story->save();
+
+        StoryReadyEvent::dispatch($story);
     }
 }

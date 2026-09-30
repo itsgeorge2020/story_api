@@ -16,8 +16,10 @@ use Illuminate\Queue\Attributes\Timeout;
 use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use SergiX44\Nutgram\Telegram\Types\Internal\InputFile;
 
 #[Queue('telegram')]
 #[Tries(3)]
@@ -42,13 +44,36 @@ class SendStoryToTelegramJob implements ShouldQueue
     ): void {
         $bot = $nutgramFactory->make();
         $text = $formatter->format($this->story->result_text ?? '');
+        $cover = $this->story->cover;
 
-        foreach ($formatter->splitIntoChunks($text) as $chunk) {
-            $bot->sendMessage(
-                text: $chunk,
+        if ($cover !== null) {
+            $parts = $formatter->splitForPhoto($text);
+
+            $bot->sendPhoto(
+                photo: InputFile::make(
+                    Storage::disk($cover->disk)->readStream($cover->filename),
+                    $cover->filename,
+                ),
                 chat_id: $this->user->chat_id,
+                caption: $parts['caption'],
                 parse_mode: 'HTML',
             );
+
+            foreach ($parts['messages'] as $chunk) {
+                $bot->sendMessage(
+                    text: $chunk,
+                    chat_id: $this->user->chat_id,
+                    parse_mode: 'HTML',
+                );
+            }
+        } else {
+            foreach ($formatter->splitIntoChunks($text) as $chunk) {
+                $bot->sendMessage(
+                    text: $chunk,
+                    chat_id: $this->user->chat_id,
+                    parse_mode: 'HTML',
+                );
+            }
         }
 
         $this->story->status = StoryStatusEnum::COMPLETED;
