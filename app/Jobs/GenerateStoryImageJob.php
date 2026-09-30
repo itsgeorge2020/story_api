@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Actions\Story\SaveGeneratedImageAction;
 use App\Contracts\ImageGenerationServiceInterface;
+use App\Contracts\ImagePromptServiceInterface;
 use App\Enums\StoryStatusEnum;
 use App\Events\StoryReadyEvent;
 use App\Models\Story;
@@ -33,6 +34,7 @@ class GenerateStoryImageJob implements ShouldQueue
 
     public function handle(
         ImageGenerationServiceInterface $imageGen,
+        ImagePromptServiceInterface $imagePromptService,
         SaveGeneratedImageAction $saveAction
     ): void {
         if ($this->story->cover()->exists()) {
@@ -40,14 +42,16 @@ class GenerateStoryImageJob implements ShouldQueue
             return;
         }
 
-        $prompt = trim((string) $this->story->cover_description);
+        $description = trim((string) $this->story->cover_description);
 
-        if ($prompt === '') {
+        if ($description === '') {
             Log::channel('generationImage')
                 ->warning("Story {$this->story->id}: cover_description пуст, отправляем без обложки");
             $this->markReady();
             return;
         }
+
+        $prompt = $imagePromptService->createPrompt($description);
 
         $stream = $imageGen->generateStream($prompt);
 
