@@ -22,7 +22,7 @@ class SaveGeneratedStoryAction
         $story = $user->stories()->create([
             'source'       => $source,
             'type'         => $exercise->getType(),
-            'status'       => StoryStatusEnum::READY,
+            'status'       => StoryStatusEnum::PROCESSING,
             'request_text' => $exercise->getRequestText(),
             'result_text'  => $storyData->getText(),
             'cover_description' => $storyData->getCoverDescription(),

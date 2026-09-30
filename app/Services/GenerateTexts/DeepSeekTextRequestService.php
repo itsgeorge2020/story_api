@@ -35,7 +35,7 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
         // Ошибка самого DeepSeek API
         if (isset($payload['error'])) {
             $message = $payload['error']['message'] ?? 'Неизвестная ошибка DeepSeek';
-            throw new DeepSeekException('DeepSeek API: ' . $message);
+            throw new DeepSeekException($message);
         }
 
         // Контракт: status / code / message
@@ -48,7 +48,7 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
         $story = $payload['message'] ?? null;
 
         if (!is_string($story) || trim($story) === '') {
-            throw new GenerateException('DeepSeek вернул пустой текст сказки');
+            throw new GenerateException('Пустой текст сказки');
         }
 
         $coverDescription = $payload['cover_description'] ?? '';

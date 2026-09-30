@@ -2,6 +2,7 @@
 
 namespace App\Telegram\Jobs;
 
+use App\Enums\StoryStatusEnum;
 use App\Models\Story;
 use App\Models\TelegramUser;
 use App\Telegram\Formatters\TelegramTextFormatter;
@@ -49,5 +50,8 @@ class SendStoryToTelegramJob implements ShouldQueue
                 parse_mode: 'HTML',
             );
         }
+
+        $this->story->status = StoryStatusEnum::COMPLETED;
+        $this->story->save();
     }
 }

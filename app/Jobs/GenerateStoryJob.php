@@ -23,7 +23,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-#[Queue('deepseek')]
+#[Queue('generate_text')]
 #[Tries(3)]
 #[Timeout(120)]
 #[Backoff([10, 30, 60])]
@@ -43,7 +43,7 @@ class GenerateStoryJob implements ShouldQueue
     public function handle(
         TextPromptServiceInterface $textPromptService,
         TextRequestServiceInterface $textRequestService,
-        SaveGeneratedStoryAction $saveAction,
+        SaveGeneratedStoryAction $saveAction
     ): void {
         try {
             $prompt = $textPromptService->createPrompt($this->exercise);
@@ -54,7 +54,8 @@ class GenerateStoryJob implements ShouldQueue
             return;
         } catch (DeepSeekException $exception) {
             // сеть/API — пусть Laravel ретраит
-            Log::channel('deepseekApi')->error($exception->getMessage());
+            Log::channel('generationText')
+                ->error('[DeepSeek API Error] ' . $exception->getMessage());
             throw $exception;
         }
 
@@ -68,7 +69,8 @@ class GenerateStoryJob implements ShouldQueue
 
     public function failed(Throwable $exception): void
     {
-        Log::channel('generation')->error('GenerateStoryJob failed: ' . $exception->getMessage());
+        Log::channel('generationText')
+            ->error('[GenerateStoryJob failed] ' . $exception->getMessage());
 
         StoryGenerationFailedEvent::dispatch($this->user, $this->source);
     }

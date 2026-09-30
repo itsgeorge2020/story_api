@@ -5,8 +5,12 @@ namespace App\Providers;
 use App\Contracts\ImageGenerationServiceInterface;
 use App\Contracts\TextPromptServiceInterface;
 use App\Contracts\TextRequestServiceInterface;
+use App\Events\ImageGeneratedEvent;
 use App\Events\StoryGeneratedEvent;
 use App\Events\StoryGenerationFailedEvent;
+use App\Events\StoryReadyEvent;
+use App\Listeners\GenerateStoryImageListener;
+use App\Listeners\StoryToReadyListener;
 use App\Services\GenerateImages\CloudflareWorkersImageGenerationService;
 use App\Services\GenerateTexts\DeepSeekTextPromptService;
 use App\Services\GenerateTexts\DeepSeekTextRequestService;
@@ -35,12 +39,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Event::listen(
             StoryGeneratedEvent::class,
-            SendStoryToTelegramListener::class,
+            GenerateStoryImageListener::class,
         );
 
         Event::listen(
             StoryGenerationFailedEvent::class,
             SendFailureToTelegramListener::class,
+        );
+
+        Event::listen(
+            ImageGeneratedEvent::class,
+            StoryToReadyListener::class
+        );
+
+        Event::listen(
+            StoryReadyEvent::class,
+            SendStoryToTelegramListener::class,
         );
     }
 }
