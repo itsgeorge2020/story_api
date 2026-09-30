@@ -117,13 +117,8 @@ class StoryConversation extends Conversation
         $this->age       = $this->lastChildData['age'];
         $this->gender    = $this->lastChildData['gender'];
 
-        $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
-            ->addRow(
-                KeyboardButton::make('Решить проблему'),
-                KeyboardButton::make('Объяснить')
-            );
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $this->storyTypeKeyboard());
 
-        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
         $this->next('askRequest');
     }
 
@@ -183,14 +178,8 @@ class StoryConversation extends Conversation
 
         $this->age = (int) $text;
 
-        $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true)
-            ->addRow(
-                KeyboardButton::make('Решить проблему'),
-                KeyboardButton::make('Объяснить'),
-                KeyboardButton::make('Любая сказка')
-            );
+        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $this->storyTypeKeyboard());
 
-        $bot->sendMessage('Какую сказку выбираем?', reply_markup: $keyboard);
         $this->next('askRequest');
     }
 
@@ -219,6 +208,11 @@ class StoryConversation extends Conversation
             $randomType = StoryTypeEnum::random();
             $this->storyType  = $randomType->value;
             $this->requestText = Arr::random(config("topics.{$this->storyType}"));
+
+            $bot->sendMessage(
+                text: '🎲 Выбираю любую сказку...',
+                reply_markup: ReplyKeyboardRemove::make(true)
+            );
 
             $this->next('generate');
             return;
@@ -288,7 +282,11 @@ class StoryConversation extends Conversation
 
         GenerateStoryJob::dispatch($exercise, $telegramUser, StorySourceEnum::TELEGRAM);
 
-        $bot->sendMessage('🐈 Ищу подходящую сказку...');
+        $bot->sendMessage(
+            text: '🐈 Ищу подходящую сказку...',
+            reply_markup: ReplyKeyboardRemove::make(true)
+        );
+
         $this->end();
     }
 
@@ -300,5 +298,15 @@ class StoryConversation extends Conversation
             ->first();
 
         return $lastStory?->child_data;
+    }
+
+    private function storyTypeKeyboard(): ReplyKeyboardMarkup
+    {
+        return ReplyKeyboardMarkup::make(resize_keyboard: true)
+            ->addRow(
+                KeyboardButton::make('Решить проблему'),
+                KeyboardButton::make('Объяснить'),
+                KeyboardButton::make('Любая сказка'),
+            );
     }
 }
