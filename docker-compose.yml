@@ -13,9 +13,11 @@ services:
         volumes:
             - ./:/var/www/html
         depends_on:
-            - php
+            php:
+                condition: service_started
         networks:
             - story_net
+        restart: unless-stopped
 
     php:
         build:
@@ -29,22 +31,44 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         depends_on:
-            - mysql
-            - redis
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         networks:
             - story_net
         user: "1000:1000"
+        restart: unless-stopped
 
-    worker_deepseek:
+    worker_generate_text:
         image: story_api_php
-        container_name: story_worker_deepseek
-        command: php artisan queue:work redis --queue=deepseek --sleep=3
+        container_name: story_worker_generate_text
+        command: php artisan queue:work redis --queue=generate_text --sleep=3 --max-time=3600 --tries=3 --timeout=120
         working_dir: /var/www/html
         volumes:
             - ./:/var/www/html
         depends_on:
-            - mysql
-            - redis
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - story_net
+        user: "1000:1000"
+        restart: unless-stopped
+
+    worker_generate_image:
+        image: story_api_php
+        container_name: story_worker_generate_image
+        command: php artisan queue:work redis --queue=generate_image --sleep=3 --max-time=3600 --tries=3 --timeout=120
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         networks:
             - story_net
         user: "1000:1000"
@@ -53,38 +77,23 @@ services:
     worker_telegram:
         image: story_api_php
         container_name: story_worker_telegram
-        command: php artisan queue:work redis --queue=telegram --sleep=3
+        command: php artisan queue:work redis --queue=telegram --sleep=3 --max-time=3600 --tries=3 --timeout=60
         working_dir: /var/www/html
         volumes:
             - ./:/var/www/html
         depends_on:
-            - mysql
-            - redis
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         networks:
             - story_net
         user: "1000:1000"
         restart: unless-stopped
 
-#    worker:
-#        image: story_api_php
-#        container_name: story_worker
-#        command: php artisan queue:work redis --queue=telegram,deepseek --tries=3 --timeout=120 --sleep=3
-#        working_dir: /var/www/html
-#        volumes:
-#            - ./:/var/www/html
-#        depends_on:
-#            - mysql
-#            - redis
-#        networks:
-#            - story_net
-#        user: "1000:1000"
-#        restart: unless-stopped
-
     mysql:
         image: mysql:8.4
         container_name: story_mysql
-        ports:
-            - "${FORWARD_DB_PORT:-3306}:3306"   # host:container
         environment:
             MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
             MYSQL_DATABASE: ${DB_DATABASE}
@@ -94,14 +103,25 @@ services:
             - story_mysql_data:/var/lib/mysql
         networks:
             - story_net
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
 
     redis:
         image: redis:alpine
         container_name: story_redis
-        ports:
-            - "${FORWARD_REDIS_PORT:-6379}:6379"   # host:container
         networks:
             - story_net
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
 
 networks:
     story_net:

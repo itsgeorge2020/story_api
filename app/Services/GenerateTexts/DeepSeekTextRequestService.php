@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\GenerateTexts;
 
 use App\Contracts\TextRequestServiceInterface;
+use App\DTO\GeneratedTextDTO;
 use App\Exceptions\DeepSeekException;
 use App\Exceptions\GenerateException;
 use DeepSeek\DeepSeekClient;
@@ -15,7 +16,7 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
      * @throws DeepSeekException
      * @throws GenerateException
      */
-    public function send(string $prompt): string
+    public function send(string $prompt): GeneratedTextDTO
     {
         try {
             $response = DeepSeekClient::build(config('services.deepseek.key'))
@@ -29,13 +30,12 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
             throw new DeepSeekException('Ошибка при обращении к DeepSeek API: ' . $exception->getMessage());
         }
 
-        // Приводим ответ к массиву — на случай, если клиент вернул строку
         $payload = $this->normalizeResponse($response);
 
-        // Ошибка самого DeepSeek API (Insufficient Balance и т.п.)
+        // Ошибка самого DeepSeek API
         if (isset($payload['error'])) {
             $message = $payload['error']['message'] ?? 'Неизвестная ошибка DeepSeek';
-            throw new DeepSeekException('DeepSeek API: ' . $message);
+            throw new DeepSeekException($message);
         }
 
         // Контракт: status / code / message
@@ -48,10 +48,19 @@ class DeepSeekTextRequestService implements TextRequestServiceInterface
         $story = $payload['message'] ?? null;
 
         if (!is_string($story) || trim($story) === '') {
-            throw new GenerateException('DeepSeek вернул пустой текст сказки');
+            throw new GenerateException('Пустой текст сказки');
         }
 
-        return $story;
+        $coverDescription = $payload['cover_description'] ?? '';
+
+        if (!is_string($coverDescription)) {
+            $coverDescription = '';
+        }
+
+        return new GeneratedTextDTO(
+            text: $story,
+            coverDescription: trim($coverDescription),
+        );
     }
 
     /**

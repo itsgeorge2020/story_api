@@ -143,9 +143,17 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'generation' => [
+        'generationText' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/generation.log'),
+            'path' => storage_path('logs/generation_text.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'max_files' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        'generationImage' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/generation_image.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 30),
             'replace_placeholders' => true,

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\GenerateTexts;
 
 use App\Contracts\TextPromptServiceInterface;
 use App\DTO\CreateStoryTextExerciseDTO;
@@ -23,9 +23,9 @@ class DeepSeekTextPromptService implements TextPromptServiceInterface
     private function getTemplate(StoryTypeEnum $type): string
     {
         return match ($type) {
-            StoryTypeEnum::TEACH => 'prompts.text_teach',
-            StoryTypeEnum::EXPLAIN => 'prompts.text_explain',
-            StoryTypeEnum::PROBLEM => 'prompts.text_problem'
+            StoryTypeEnum::TEACH => 'prompts.texts.teach',
+            StoryTypeEnum::EXPLAIN => 'prompts.texts.explain',
+            StoryTypeEnum::PROBLEM => 'prompts.texts.problem'
         };
     }
 }

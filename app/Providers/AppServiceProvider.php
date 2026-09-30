@@ -2,12 +2,16 @@
 
 namespace App\Providers;
 
+use App\Contracts\ImageGenerationServiceInterface;
+use App\Contracts\ImagePromptServiceInterface;
 use App\Contracts\TextPromptServiceInterface;
 use App\Contracts\TextRequestServiceInterface;
-use App\Events\StoryGeneratedEvent;
 use App\Events\StoryGenerationFailedEvent;
-use App\Services\DeepSeekTextRequestService;
-use App\Services\DeepSeekTextPromptService;
+use App\Events\StoryReadyEvent;
+use App\Services\GenerateImages\CloudflareWorkersImageGenerationService;
+use App\Services\GenerateImages\CoverImagePromptService;
+use App\Services\GenerateTexts\DeepSeekTextPromptService;
+use App\Services\GenerateTexts\DeepSeekTextRequestService;
 use App\Telegram\Listeners\SendFailureToTelegramListener;
 use App\Telegram\Listeners\SendStoryToTelegramListener;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(TextRequestServiceInterface::class, DeepSeekTextRequestService::class);
         $this->app->bind(TextPromptServiceInterface::class, DeepSeekTextPromptService::class);
+
+        $this->app->singleton(ImageGenerationServiceInterface::class, CloudflareWorkersImageGenerationService::class);
+        $this->app->bind(ImagePromptServiceInterface::class, CoverImagePromptService::class);
     }
 
     /**
@@ -30,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(
-            StoryGeneratedEvent::class,
+            StoryReadyEvent::class,
             SendStoryToTelegramListener::class,
         );
 

@@ -6,7 +6,7 @@ use App\Models\Story;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StoryGeneratedEvent
+class StoryReadyEvent
 {
     use Dispatchable, SerializesModels;
 
