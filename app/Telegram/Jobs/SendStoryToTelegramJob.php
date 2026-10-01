@@ -6,6 +6,7 @@ use App\Enums\StoryStatusEnum;
 use App\Models\Story;
 use App\Models\TelegramUser;
 use App\Telegram\Formatters\TelegramTextFormatter;
+use App\Telegram\Menus\MainMenu;
 use App\Telegram\Services\NutgramFactory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -78,5 +79,12 @@ class SendStoryToTelegramJob implements ShouldQueue
 
         $this->story->status = StoryStatusEnum::COMPLETED;
         $this->story->save();
+
+        $bot->sendMessage(
+            text: '<i>© С любовью — ваш сказочный Кот 🐈</i>',
+            chat_id: $this->user->chat_id,
+            parse_mode: 'HTML',
+            reply_markup: MainMenu::keyboard(),
+        );
     }
 }

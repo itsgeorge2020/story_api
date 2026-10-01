@@ -7,7 +7,7 @@ use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardMarkup;
 
 class MainMenu
 {
-    public const BUTTON_NEW_STORY = '📖 Хочу сказку';
+    public const BUTTON_NEW_STORY = '🛕 Хочу сказку';
 
     public static function keyboard(): ReplyKeyboardMarkup
     {
