@@ -125,6 +125,10 @@ return [
 
     'story' => [
         'dailyLimit' => env('STORY_DAILY_LIMIT', 99),
-    ]
+    ],
+
+    'api' => [
+        'token' => env('API_TOKEN'),
+    ],
 
 ];

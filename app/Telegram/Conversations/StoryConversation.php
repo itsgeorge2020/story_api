@@ -59,7 +59,9 @@ class StoryConversation extends Conversation
             return;
         }
 
-        if ($telegramUser->hasDailyLimit()) {
+        $vipUserId = config('nutgram.vip_user_id');
+
+        if ($bot->userId() != $vipUserId && $telegramUser->hasDailyLimit()) {
             $bot->sendMessage('Лимит историй на сегодня исчерпан. Возвращайтесь пожалуйста завтра 🌙');
             $this->end();
             return;

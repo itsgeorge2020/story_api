@@ -4,6 +4,9 @@ return [
     // The Telegram BOT api token
     'token' => env('TELEGRAM_TOKEN'),
 
+    // Telegram user id that bypasses daily story limits
+    'vip_user_id' => env('TELEGRAM_VIP_USER_ID'),
+
     // if the webhook mode must validate the incoming IP range is from a telegram server
     'safe_mode' => env('APP_ENV', 'local') === 'production',
 
