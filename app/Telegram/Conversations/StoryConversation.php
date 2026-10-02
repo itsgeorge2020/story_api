@@ -12,12 +12,14 @@ use App\Enums\StoryTypeEnum;
 use App\Jobs\GenerateStoryJob;
 use App\Models\TelegramUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Psr\SimpleCache\InvalidArgumentException;
 use SergiX44\Nutgram\Conversations\Conversation;
 use SergiX44\Nutgram\Nutgram;
 use SergiX44\Nutgram\Telegram\Types\Keyboard\KeyboardButton;
 use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardMarkup;
 use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardRemove;
+use Throwable;
 
 class StoryConversation extends Conversation
 {
@@ -41,25 +43,32 @@ class StoryConversation extends Conversation
     {
         $user = $bot->user();
 
-        $telegramUserDTO = new TelegramUserDTO(
-            userId: $bot->userId(),
-            chatId: $bot->chatId(),
-            userName: $user->username,
-            languageCode: $user->language_code,
-            isPremium: $user->is_premium ?? false,
-            firstName: $user->first_name,
-            lastName: $user->last_name
-        );
+        try {
+            $vipUserId = config('nutgram.vip_user_id');
 
-        $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
+            $telegramUserDTO = new TelegramUserDTO(
+                userId: $bot->userId(),
+                chatId: $bot->chatId(),
+                languageCode: $user->language_code,
+                userName: $user->username,
+                isPremium: $user->is_premium ?? false,
+                firstName: $user->first_name,
+                lastName: $user->last_name
+            );
+
+            $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
+        } catch (Throwable $exception) {
+            Log::error('[Conversation error] ' . $exception->getMessage());
+            $bot->sendMessage('😿 Что-то пошло не так...');
+            $this->end();
+            return;
+        }
 
         if (!$telegramUser) {
             $bot->sendMessage('😿 Что-то пошло не так...');
             $this->end();
             return;
         }
-
-        $vipUserId = config('nutgram.vip_user_id');
 
         if ($bot->userId() != $vipUserId && $telegramUser->hasDailyLimit()) {
             $bot->sendMessage('Лимит историй на сегодня исчерпан. Возвращайтесь пожалуйста завтра 🌙');
