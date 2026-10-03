@@ -18,6 +18,34 @@ class TelegramTextFormatter
 
     public function splitIntoChunks(string $text, int $maxLength = self::MAX_CHUNK_LENGTH): array
     {
+        return $this->balanceTags($this->rawChunks($text, $maxLength));
+    }
+
+    public function splitForPhoto(string $text): array
+    {
+        $text = trim($text);
+
+        if ($text === '') {
+            return ['caption' => '', 'messages' => []];
+        }
+
+        $captionChunks = $this->rawChunks($text, self::MAX_CAPTION_LENGTH);
+        $caption = array_shift($captionChunks);
+        $rest = trim(implode("\n\n", $captionChunks));
+
+        $messages = $rest === '' ? [] : $this->rawChunks($rest, self::MAX_CHUNK_LENGTH);
+
+        $balanced = $this->balanceTags(array_merge([$caption], $messages));
+        $caption = array_shift($balanced);
+
+        return [
+            'caption'  => $caption,
+            'messages' => $balanced,
+        ];
+    }
+
+    private function rawChunks(string $text, int $maxLength): array
+    {
         $chunks = [];
         $buffer = '';
 
@@ -43,22 +71,37 @@ class TelegramTextFormatter
         return $chunks;
     }
 
-    public function splitForPhoto(string $text): array
+    private function balanceTags(array $chunks): array
     {
-        $text = trim($text);
+        $balanced = [];
+        $carry = [];
 
-        if ($text === '') {
-            return ['caption' => '', 'messages' => []];
+        foreach ($chunks as $chunk) {
+            foreach ($carry as $tag) {
+                $chunk = "<$tag>" . $chunk;
+            }
+
+            $stack = [];
+
+            if (preg_match_all('/<(\/?)([bi])>/', $chunk, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    if ($match[1] === '') {
+                        $stack[] = $match[2];
+                    } else {
+                        array_pop($stack);
+                    }
+                }
+            }
+
+            foreach (array_reverse($stack) as $tag) {
+                $chunk .= "</$tag>";
+            }
+
+            $balanced[] = $chunk;
+            $carry = $stack;
         }
 
-        $captionChunks = $this->splitIntoChunks($text, self::MAX_CAPTION_LENGTH);
-        $caption = array_shift($captionChunks);
-        $rest = trim(implode("\n\n", $captionChunks));
-
-        return [
-            'caption'  => $caption,
-            'messages' => $rest === '' ? [] : $this->splitIntoChunks($rest),
-        ];
+        return $balanced;
     }
 
     private function splitOversized(string $paragraph, int $maxLength): array
