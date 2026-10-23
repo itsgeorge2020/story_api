@@ -2,8 +2,9 @@
 
 namespace App\Telegram\Conversations;
 
-use App\Actions\Story\TelegramUserCreateOrUpdateAction;
-use App\DTO\ChildDTO;
+use App\Actions\Telegram\TelegramUserCreateOrUpdateAction;
+use App\Enums\BotEnum;
+use App\DTO\StoryChildDTO;
 use App\DTO\CreateStoryTextExerciseDTO;
 use App\DTO\TelegramUserDTO;
 use App\Enums\StorySourceEnum;
@@ -53,7 +54,8 @@ class StoryConversation extends Conversation
                 userName: $user->username,
                 isPremium: $user->is_premium ?? false,
                 firstName: $user->first_name,
-                lastName: $user->last_name
+                lastName: $user->last_name,
+                fromBot: BotEnum::STORY
             );
 
             $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);
@@ -264,7 +266,7 @@ class StoryConversation extends Conversation
      */
     public function generate(Nutgram $bot): void
     {
-        $child = new ChildDTO(
+        $child = new StoryChildDTO(
             name: $this->childName,
             age: $this->age,
             gender: $this->gender
@@ -278,6 +280,7 @@ class StoryConversation extends Conversation
 
         $telegramUser = TelegramUser::query()
             ->where('telegram_id', $bot->userId())
+            ->where('from_bot', BotEnum::STORY)
             ->first();
 
         if (!$telegramUser) {

@@ -8,7 +8,7 @@ use App\Enums\StoryTypeEnum;
 readonly class CreateStoryTextExerciseDTO
 {
     public function __construct(
-        private ChildDTO $child,
+        private StoryChildDTO $child,
         private string $requestText,
         private StoryTypeEnum $type
     ) {}
@@ -20,7 +20,7 @@ readonly class CreateStoryTextExerciseDTO
             'age' => $request->input('age'),
             'gender' => $request->input('gender')
         ];
-        $child = ChildDTO::createFromRequest($childData);
+        $child = StoryChildDTO::createFromRequest($childData);
 
         $type = StoryTypeEnum::getByCase($request->input('type'));
 
@@ -31,7 +31,7 @@ readonly class CreateStoryTextExerciseDTO
         );
     }
 
-    public function getChild(): ChildDTO
+    public function getChild(): StoryChildDTO
     {
         return $this->child;
     }

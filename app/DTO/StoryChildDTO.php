@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-readonly class ChildDTO
+readonly class StoryChildDTO
 {
     public function __construct(
         private ?string $name = null,
@@ -10,7 +10,7 @@ readonly class ChildDTO
         private ?string $gender = null
     ) {}
 
-    public static function createFromRequest(array $data): ChildDTO
+    public static function createFromRequest(array $data): self
     {
         return new self(
             name: $data['name'] ?? null,

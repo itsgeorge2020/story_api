@@ -2,12 +2,15 @@
 
 namespace App\DTO;
 
+use App\Enums\BotEnum;
+
 readonly class TelegramUserDTO
 {
     public function __construct(
         private int $userId,
         private int $chatId,
-        private ?string $languageCode,
+        private BotEnum $fromBot,
+        private ?string $languageCode = null,
         private ?string $userName = null,
         private bool $isPremium = false,
         private ?string $firstName = null,
@@ -47,5 +50,10 @@ readonly class TelegramUserDTO
     public function getLastName(): ?string
     {
         return $this->lastName;
+    }
+
+    public function getFromBot(): BotEnum
+    {
+        return $this->fromBot;
     }
 }

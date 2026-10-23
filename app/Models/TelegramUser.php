@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\UserInterface;
+use App\Enums\BotEnum;
 use App\Enums\StoryStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -17,7 +18,8 @@ class TelegramUser extends Model implements UserInterface
         'username',
         'language_code',
         'is_premium',
-        'is_bot'
+        'is_bot',
+        'from_bot'
     ];
 
     protected $casts = [
@@ -25,6 +27,7 @@ class TelegramUser extends Model implements UserInterface
         'chat_id' => 'integer',
         'is_premium' => 'boolean',
         'is_bot' => 'boolean',
+        'from_bot' => BotEnum::class,
     ];
 
     public function stories(): MorphMany
