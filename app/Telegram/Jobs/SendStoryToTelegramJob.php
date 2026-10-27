@@ -43,7 +43,7 @@ class SendStoryToTelegramJob implements ShouldQueue
         NutgramFactory $nutgramFactory,
         TelegramTextFormatter $formatter,
     ): void {
-        $bot = $nutgramFactory->make();
+        $bot = $nutgramFactory->make($this->user->from_bot);
         $text = $formatter->format($this->story->result_text ?? '');
         $cover = $this->story->cover;
 

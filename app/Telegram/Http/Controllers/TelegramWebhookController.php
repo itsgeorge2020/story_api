@@ -2,24 +2,26 @@
 
 namespace App\Telegram\Http\Controllers;
 
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use SergiX44\Nutgram\Nutgram;
+use App\Enums\BotEnum;
+use App\Telegram\Services\NutgramFactory;
 use Illuminate\Routing\Controller;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TelegramWebhookController extends Controller
 {
     /**
-     * Register with
-     * php artisan nutgram:hook:set https://api.storykot.ru/api/v1/telegram/webhook
+     * Register each bot with its own webhook, e.g.
+     * php artisan nutgram:hook:set https://api.storykot.ru/api/v1/telegram/webhook/story
+     * php artisan nutgram:hook:set https://api.storykot.ru/api/v1/telegram/webhook/sport
      */
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
-    public function __invoke(Nutgram $bot): void
+    public function __invoke(string $bot, NutgramFactory $nutgramFactory): void
     {
-        $bot->run();
+        $botEnum = BotEnum::fromSlug($bot);
+
+        if ($botEnum === null) {
+            throw new NotFoundHttpException("Unknown bot [{$bot}]");
+        }
+
+        $nutgramFactory->make($botEnum)->run();
     }
 }

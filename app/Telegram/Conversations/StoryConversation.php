@@ -50,12 +50,12 @@ class StoryConversation extends Conversation
             $telegramUserDTO = new TelegramUserDTO(
                 userId: $bot->userId(),
                 chatId: $bot->chatId(),
+                fromBot: BotEnum::STORY,
                 languageCode: $user->language_code,
                 userName: $user->username,
                 isPremium: $user->is_premium ?? false,
                 firstName: $user->first_name,
-                lastName: $user->last_name,
-                fromBot: BotEnum::STORY
+                lastName: $user->last_name
             );
 
             $telegramUser = $this->userCreateOrUpdateAction->handle($telegramUserDTO);

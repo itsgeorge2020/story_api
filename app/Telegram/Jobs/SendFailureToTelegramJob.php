@@ -30,7 +30,7 @@ class SendFailureToTelegramJob implements ShouldQueue
 
     public function handle(NutgramFactory $nutgramFactory): void
     {
-        $bot = $nutgramFactory->make();
+        $bot = $nutgramFactory->make($this->user->from_bot);
 
         $bot->sendMessage(
             text: self::FAILURE_MESSAGE,

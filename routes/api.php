@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware(['throttle:600,1'])->group(function() {
     Route::resource('stories', StoryController::class);
-    Route::post('telegram/webhook', TelegramWebhookController::class)
+    Route::post('telegram/webhook/{bot}', TelegramWebhookController::class)
         ->withoutMiddleware([PreventRequestForgery::class]);
 
     Route::prefix('analytics')->middleware(['api.token'])->group(function() {

@@ -2,7 +2,13 @@
 
 return [
     // The Telegram BOT api token
-    'token' => env('TELEGRAM_TOKEN'),
+    'token' => env('STORY_TELEGRAM_TOKEN'),
+
+    // Per-bot api tokens, keyed by BotEnum slug
+    'bots' => [
+        'story' => env('STORY_TELEGRAM_TOKEN'),
+        'sport' => env('SPORT_TELEGRAM_TOKEN'),
+    ],
 
     // Telegram user id that bypasses daily story limits
     'vip_user_id' => env('TELEGRAM_VIP_USER_ID'),
@@ -20,7 +26,8 @@ return [
 
     // Set if the service provider should automatically load
     // handlers from /routes/telegram.php
-    'routes' => true,
+    // Disabled: handlers are registered per-bot via NutgramFactory
+    'routes' => false,
 
     // Enable or disable Nutgram mixins
     'mixins' => false,

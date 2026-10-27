@@ -1,17 +1,10 @@
 <?php
 /** @var SergiX44\Nutgram\Nutgram $bot */
+/** @var App\Enums\BotEnum $botEnum */
 
-use App\Telegram\Conversations\StoryConversation;
-use App\Telegram\Menus\MainMenu;
-use SergiX44\Nutgram\Nutgram;
+use App\Enums\BotEnum;
 
-$bot->onCommand('start', function (Nutgram $bot) {
-    $bot->sendMessage(
-        text: MainMenu::text(),
-        reply_markup: MainMenu::keyboard(),
-    );
-})->description('Начало работы');
-
-$bot->onText(MainMenu::BUTTON_NEW_STORY, function (Nutgram $bot) {
-    StoryConversation::begin($bot);
-});
+match ($botEnum) {
+    BotEnum::STORY => require __DIR__ . '/telegram/story.php',
+    BotEnum::SPORT => require __DIR__ . '/telegram/sport.php',
+};
